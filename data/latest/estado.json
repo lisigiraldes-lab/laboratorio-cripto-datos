@@ -1,0 +1,17 @@
+{
+  "inicio": "2026-11-07T20:18:50.194219+00:00",
+  "fuentes": {
+    "coingecko_markets": "ok",
+    "binance_exchangeinfo": "https://data-api.binance.vision",
+    "binance_ticker": "ok",
+    "coingecko_global": "ok",
+    "criptoya": "ok"
+  },
+  "errores": [
+    "funding: HTTP Error 451: "
+  ],
+  "ultimo_cierre": "2026-11-06",
+  "fin": "2026-11-07T20:19:41.555252+00:00",
+  "monedas_universo": 60,
+  "monedas_con_cierres": 49
+}
