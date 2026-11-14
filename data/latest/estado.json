@@ -1,17 +1,22 @@
 {
-  "inicio": "2026-11-14T09:51:17.357796+00:00",
+  "inicio": "2026-11-14T13:23:15.048921+00:00",
   "fuentes": {
     "coingecko_markets": "ok",
     "binance_exchangeinfo": "https://data-api.binance.vision",
     "binance_ticker": "ok",
     "coingecko_global": "ok",
+    "funding": "okx",
+    "miedo_codicia": "ok",
     "criptoya": "ok"
   },
   "errores": [
-    "funding: HTTP Error 451: "
+    "funding binance: HTTP Error 451: "
+  ],
+  "excluidas_stablecoin": [
+    "U"
   ],
   "ultimo_cierre": "2026-11-13",
-  "fin": "2026-11-14T09:52:01.685267+00:00",
-  "monedas_universo": 60,
-  "monedas_con_cierres": 50
+  "fin": "2026-11-14T13:24:00.240482+00:00",
+  "monedas_universo": 59,
+  "monedas_con_cierres": 48
 }
