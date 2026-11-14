@@ -2,7 +2,7 @@
   "skill": {
     "name": "backtesting-trading-strategies",
     "source": "/tmp/escaneo/backtesting-trading-strategies",
-    "scanned_at": "2026-11-14T13:45:04.272360+00:00"
+    "scanned_at": "2026-11-14T14:42:50.295453+00:00"
   },
   "risk_assessment": {
     "score": 44,
@@ -176,7 +176,7 @@
   "issues": [
     {
       "id": "LP1",
-      "finding_id": "finding-d558a8ada70443bb8075c2f7f88c6c72",
+      "finding_id": "finding-e8a0a5c62799460bb1fc88c982ad3be6",
       "category": "MCP Least Privilege",
       "pattern": "Code capability 'file_write' detected in scripts/backtest.py but not covered by declared permissions.",
       "severity": "HIGH",
@@ -207,7 +207,7 @@
     },
     {
       "id": "LP1",
-      "finding_id": "finding-be1065a9c19348629d1d1315b45b4a22",
+      "finding_id": "finding-3887762075ee4c20b104449e9a7ee23c",
       "category": "MCP Least Privilege",
       "pattern": "Code capability 'network' detected in scripts/fetch_data.py but not covered by declared permissions.",
       "severity": "HIGH",
@@ -238,7 +238,7 @@
     },
     {
       "id": "E1",
-      "finding_id": "finding-b4d80e61416c4bf2b29462a475dcf951",
+      "finding_id": "finding-ecbd755ae6504be6b174f34e354de22a",
       "category": "Data Exfiltration",
       "pattern": "External Transmission",
       "severity": "MEDIUM",
