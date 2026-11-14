@@ -1,0 +1,70 @@
+name: Escaneo de seguridad semanal
+
+# Escanea con NVIDIA SkillSpector (solo análisis estático, sin LLM ni claves) los repositorios
+# cuyo código o skills usa el Laboratorio cripto, y guarda el reporte en data/seguridad/.
+# La revisión semanal lo lee antes de recomendar cualquier skill nueva.
+
+on:
+  schedule:
+    - cron: "41 13 * * 6"   # sábados 10:41 de Buenos Aires
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: datos
+  cancel-in-progress: false
+
+env:
+  # Versión fijada de SkillSpector (commit revisado el 2026-11-14). Cambiarla solo con aprobación.
+  SKILLSPECTOR_REF: c81615007d40e86051a302a3cf897f8a05264928
+
+jobs:
+  escanear:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Instalar SkillSpector (versión fijada)
+        run: pip install "git+https://github.com/NVIDIA/SkillSpector.git@${SKILLSPECTOR_REF}"
+      - name: Clonar repositorios a escanear
+        run: |
+          mkdir -p /tmp/escaneo
+          cd /tmp/escaneo
+          git clone --depth 1 https://github.com/tradermonty/claude-trading-skills.git claude-trading-skills
+          git -C claude-trading-skills rev-parse HEAD > claude-trading-skills.commit
+          git clone --depth 1 https://github.com/jeremylongshore/claude-code-plugins-plus-skills.git jeremylongshore
+          git -C jeremylongshore rev-parse HEAD > backtesting-trading-strategies.commit
+          dir=$(find jeremylongshore -type d -name backtesting-trading-strategies | head -1)
+          if [ -n "$dir" ]; then mv "$dir" backtesting-trading-strategies; fi
+          rm -rf jeremylongshore
+      - name: Escanear (solo estático)
+        run: |
+          fecha=$(date -u +%Y-%m-%d)
+          mkdir -p data/seguridad
+          resumen=data/seguridad/resumen.csv
+          [ -f "$resumen" ] || echo "fecha,repositorio,commit,codigo_salida" > "$resumen"
+          for nombre in claude-trading-skills backtesting-trading-strategies; do
+            ruta=/tmp/escaneo/$nombre
+            [ -d "$ruta" ] || { echo "$fecha,$nombre,,no_encontrado" >> "$resumen"; continue; }
+            commit=$(cat "/tmp/escaneo/${nombre}.commit" 2>/dev/null || echo "")
+            set +e
+            skillspector scan "$ruta" --no-llm --format json --output "data/seguridad/${nombre}.json"
+            codigo=$?
+            set -e
+            # 0 = sin riesgo relevante, 1 = riesgo encontrado (ver el JSON), 2 = error del escaneo
+            echo "$fecha,$nombre,$commit,$codigo" >> "$resumen"
+          done
+          cat "$resumen"
+      - name: Guardar reporte
+        run: |
+          git config user.name "laboratorio-cripto-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/seguridad/
+          git diff --cached --quiet || git commit -m "Escaneo de seguridad $(date -u +%Y-%m-%d)"
+          git pull --rebase
+          git push
