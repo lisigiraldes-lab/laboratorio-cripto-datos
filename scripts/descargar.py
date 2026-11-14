@@ -5,7 +5,8 @@ Solo usa endpoints públicos y gratuitos, sin API keys. Escribe en data/latest/:
   cierres.csv       cierres diarios (400 días) de cada moneda del universo con par USDT
   verificacion.csv  precio actual en dos fuentes y su diferencia porcentual
   global.json       dominancia de BTC y capitalización total
-  funding.csv       funding de perpetuos de Binance (si está disponible)
+  funding.csv       funding de perpetuos (Binance; si falla, OKX y después Bybit)
+  miedo_codicia.csv índice de miedo y codicia diario (alternative.me, 400 días)
   dolar_cripto.json USDT/ARS por exchange (CriptoYa)
   estado.json       qué se pudo descargar y qué falló
 """
@@ -127,6 +128,21 @@ def main():
             "diferencia_pct": round(abs(pb - pc) / pc * 100, 3) if pb and pc else "",
         })
         time.sleep(0.15)
+    # 3b. Stablecoins que no están en EXCLUIR: cierre entre 0,97 y 1,03 en más del 95% de los últimos 90 días
+    por_simbolo = {}
+    for c in cierres:
+        por_simbolo.setdefault(c["simbolo"], []).append((c["fecha"], float(c["cierre"])))
+    estables = set()
+    for sym, serie in por_simbolo.items():
+        cola = [x for _, x in sorted(serie)[-90:]]
+        if len(cola) >= 30 and sum(0.97 < x < 1.03 for x in cola) / len(cola) > 0.95:
+            estables.add(sym)
+    if estables:
+        estado["excluidas_stablecoin"] = sorted(estables)
+        universo = [u for u in universo if u["simbolo"] not in estables]
+        cierres = [c for c in cierres if c["simbolo"] not in estables]
+        verif = [v for v in verif if v["simbolo"] not in estables]
+        guardar_csv("universo.csv", universo, list(universo[0].keys()))
     guardar_csv("cierres.csv", cierres, ["fecha", "simbolo", "apertura", "maximo", "minimo", "cierre", "volumen_usdt"])
     guardar_csv("verificacion.csv", verif, ["simbolo", "precio_binance", "precio_coingecko", "diferencia_pct"])
     if cierres:
@@ -145,16 +161,46 @@ def main():
     except Exception as e:  # noqa: BLE001
         estado["errores"].append(f"global: {e}")
 
-    # 5. Funding (best effort; puede estar bloqueado por región)
+    # 5. Funding (best effort): Binance suele dar HTTP 451 desde GitHub; respaldo OKX y Bybit (públicos, sin clave)
+    simbolos_funding = ["BTC", "ETH", "SOL", "BNB", "XRP"]
+
+    def funding_binance(s):
+        return get(f"https://fapi.binance.com/fapi/v1/premiumIndex?symbol={s}USDT", intentos=1).get("lastFundingRate")
+
+    def funding_okx(s):
+        return get(f"https://www.okx.com/api/v5/public/funding-rate?instId={s}-USDT-SWAP", intentos=2)["data"][0]["fundingRate"]
+
+    def funding_bybit(s):
+        return get(f"https://api.bybit.com/v5/market/tickers?category=linear&symbol={s}USDT", intentos=2)["result"]["list"][0]["fundingRate"]
+
+    for nombre, fn in [("binance", funding_binance), ("okx", funding_okx), ("bybit", funding_bybit)]:
+        try:
+            filas = []
+            for s in simbolos_funding:
+                v = fn(s)
+                if v in (None, ""):
+                    raise ValueError(f"sin dato para {s}")
+                filas.append({"simbolo": s + "USDT", "funding_rate": v, "fuente": nombre})
+            guardar_csv("funding.csv", filas, ["simbolo", "funding_rate", "fuente"])
+            estado["fuentes"]["funding"] = nombre
+            break
+        except Exception as e:  # noqa: BLE001
+            estado["errores"].append(f"funding {nombre}: {e}")
+    else:
+        viejo = os.path.join(OUT, "funding.csv")
+        if os.path.exists(viejo):
+            os.remove(viejo)  # no dejar un funding de otro día
+
+    # 5b. Índice de miedo y codicia (alternative.me, público, sin clave)
     try:
-        filas = []
-        for sym in ["BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT", "XRPUSDT"]:
-            d = get(f"https://fapi.binance.com/fapi/v1/premiumIndex?symbol={sym}", intentos=1)
-            filas.append({"simbolo": sym, "funding_rate": d.get("lastFundingRate")})
-        guardar_csv("funding.csv", filas, ["simbolo", "funding_rate"])
-        estado["fuentes"]["binance_funding"] = "ok"
+        d = get("https://api.alternative.me/fng/?limit=400&format=json")
+        filas = sorted(({"fecha": datetime.fromtimestamp(int(x["timestamp"]), timezone.utc).strftime("%Y-%m-%d"),
+                         "valor": int(x["value"]), "clasificacion": x.get("value_classification", "")}
+                        for x in d["data"]), key=lambda f: f["fecha"])
+        guardar_csv("miedo_codicia.csv", filas, ["fecha", "valor", "clasificacion"])
+        estado["fuentes"]["miedo_codicia"] = "ok"
     except Exception as e:  # noqa: BLE001
-        estado["errores"].append(f"funding: {e}")
+        estado["errores"].append(f"miedo_codicia: {e}")
 
     # 6. Dólar cripto
     try:
