@@ -1,5 +1,5 @@
 {
-  "inicio": "2026-11-14T13:23:15.048921+00:00",
+  "inicio": "2026-11-15T09:52:02.474809+00:00",
   "fuentes": {
     "coingecko_markets": "ok",
     "binance_exchangeinfo": "https://data-api.binance.vision",
@@ -15,8 +15,8 @@
   "excluidas_stablecoin": [
     "U"
   ],
-  "ultimo_cierre": "2026-11-13",
-  "fin": "2026-11-14T13:24:00.240482+00:00",
+  "ultimo_cierre": "2026-11-14",
+  "fin": "2026-11-15T09:52:49.362580+00:00",
   "monedas_universo": 59,
-  "monedas_con_cierres": 48
+  "monedas_con_cierres": 50
 }
