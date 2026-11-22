@@ -1,5 +1,5 @@
 {
-  "inicio": "2026-11-21T09:53:16.531647+00:00",
+  "inicio": "2026-11-22T09:53:04.138157+00:00",
   "fuentes": {
     "coingecko_markets": "ok",
     "binance_exchangeinfo": "https://data-api.binance.vision",
@@ -13,10 +13,11 @@
     "funding binance: HTTP Error 451: "
   ],
   "excluidas_stablecoin": [
+    "RWUSD",
     "U"
   ],
-  "ultimo_cierre": "2026-11-20",
-  "fin": "2026-11-21T09:54:14.348835+00:00",
-  "monedas_universo": 59,
-  "monedas_con_cierres": 46
+  "ultimo_cierre": "2026-11-21",
+  "fin": "2026-11-22T09:54:00.965938+00:00",
+  "monedas_universo": 58,
+  "monedas_con_cierres": 47
 }
